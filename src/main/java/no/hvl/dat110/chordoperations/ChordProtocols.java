@@ -152,30 +152,44 @@ public class ChordProtocols {
 	}
 	
 	public void fixFingerTable() {
-		
-		try {
-			logger.info("Fixing the FingerTable for the Node: "+ chordnode.getNodeName());
 	
-			// get the finger table from the chordnode (list object)
-			
-			// ensure to clear the current finger table
-			
-			// get the address size from the Hash class. This is the modulus and our address space (2^mbit = modulus)
-			
-			// get the number of bits from the Hash class. Number of bits = size of the finger table
-			
-			// iterate over the number of bits			
-			
-			// compute: k = succ(n + 2^(i)) mod 2^mbit
-			
-			// then: use chordnode to find the successor of k. (i.e., succnode = chordnode.findSuccessor(k))
-			
-			// check that succnode is not null, then add it to the finger table
-
+		try {
+			logger.info("Fixing the FingerTable for the Node: " + chordnode.getNodeName());
+	
+			// get the finger table from the chordnode
+			java.util.List<NodeInterface> fingertable = chordnode.getFingerTable();
+	
+			// clear current entries
+			fingertable.clear();
+	
+			// address space size = 2^m
+			BigInteger modulus = no.hvl.dat110.util.Hash.addressSize();
+	
+			// number of bits = number of finger entries
+			int m = no.hvl.dat110.util.Hash.bitSize();
+	
+			BigInteger nodeID = chordnode.getNodeID();
+	
+			for (int i = 0; i < m; i++) {
+	
+				// k = (n + 2^i) mod 2^m
+				BigInteger twoPowerI = BigInteger.valueOf(2).pow(i);
+				BigInteger key = nodeID.add(twoPowerI).mod(modulus);
+	
+				// find successor of k
+				NodeInterface succnode = chordnode.findSuccessor(key);
+	
+				// add valid successor to finger table
+				if (succnode != null) {
+					fingertable.add(succnode);
+				}
+			}
+	
 		} catch (RemoteException e) {
 			//
 		}
 	}
+	
 
 	protected NodeInterface getChordnode() {
 		return chordnode;

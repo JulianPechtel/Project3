@@ -15,45 +15,44 @@ public class Hash {
 	
 	
 	public static BigInteger hashOf(String entity) {	
-		
+	
 		BigInteger hashint = null;
 		
-		// Task: Hash a given string using MD5 and return the result as a BigInteger.
-		
-		// we use MD5 with 128 bits digest
-		
-		// compute the hash of the input 'entity'
-		
-		// convert the hash into hex format
-		
-		// convert the hex into BigInteger
-		
-		// return the BigInteger
+		try {
+			MessageDigest md = MessageDigest.getInstance("MD5");
+			
+			byte[] digest = md.digest(entity.getBytes("UTF-8"));
+			
+			// convert to positive BigInteger
+			hashint = new BigInteger(1, digest);
+			
+		} catch (NoSuchAlgorithmException | UnsupportedEncodingException e) {
+			e.printStackTrace();
+		}
 		
 		return hashint;
 	}
 	
 	public static BigInteger addressSize() {
 		
-		// Task: compute the address size of MD5
+		int bits = bitSize();
 		
-		// compute the number of bits = bitSize()
-		
-		// compute the address size = 2 ^ number of bits
-		
-		// return the address size
-		
-		return null;
+		// 2^bits
+		return BigInteger.valueOf(2).pow(bits);
 	}
 	
 	public static int bitSize() {
 		
-		int digestlen = 0;
+		try {
+			MessageDigest md = MessageDigest.getInstance("MD5");
+			return md.getDigestLength() * 8; // bytes → bits
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+		}
 		
-		// find the digest length
-		
-		return digestlen*8;
+		return 0;
 	}
+	
 	
 	public static String toHex(byte[] digest) {
 		StringBuilder strbuilder = new StringBuilder();

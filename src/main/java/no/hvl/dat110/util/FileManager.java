@@ -57,15 +57,15 @@ public class FileManager {
 	}
 	
 	public void createReplicaFiles() {
-	 	
-		// set a loop where size = numReplicas
-		
-		// replicate by adding the index to filename
-		
-		// hash the replica
-		
-		// store the hash in the replicafiles array.
+ 	
+		for (int i = 0; i < numReplicas; i++) {
+			
+			String replica = filename + i;
+			
+			replicafiles[i] = Hash.hashOf(replica);
+		}
 	}
+	
 	
     /**
      * 
@@ -73,32 +73,44 @@ public class FileManager {
      * @throws RemoteException 
      */
     public int distributeReplicastoPeers() throws RemoteException {
-    	
-    	// randomly appoint the primary server to this file replicas
-    	Random rnd = new Random(); 							
-    	int index = rnd.nextInt(Util.numReplicas-1);
-    	
-    	int counter = 0;
 	
-    	// Task1: Given a filename, make replicas and distribute them to all active peers such that: pred < replica <= peer
-    	
-    	// Task2: assign a replica as the primary for this file. Hint, see the slide (project 3) on Canvas
-    	
-    	// create replicas of the filename
-    	
-		// iterate over the replicas
-    	
-    	// for each replica, find its successor (peer/node) by performing findSuccessor(replica)
-    	
-    	// call the addKey on the successor and add the replica
-		
-		// implement a logic to decide if this successor should be assigned as the primary for the file
-    	
-    	// call the saveFileContent() on the successor and set isPrimary=true if logic above is true otherwise set isPrimary=false
-    	
-    	// increment counter
+		// randomly appoint primary replica
+		Random rnd = new Random();
+		int primaryIndex = rnd.nextInt(numReplicas);
+	
+		int counter = 0;
+	
+		// create replicas
+		createReplicaFiles();
+	
+		for (int i = 0; i < numReplicas; i++) {
+	
+			BigInteger replica = replicafiles[i];
+	
+			// find successor node responsible for this replica
+			NodeInterface successor = chordnode.findSuccessor(replica);
+	
+			if (successor != null) {
+	
+				// add replica key to node
+				successor.addKey(replica);
+	
+				boolean isPrimary = (i == primaryIndex);
+	
+				// save file content on node
+				successor.saveFileContent(
+					filename,
+					replica,
+					bytesOfFile,
+					isPrimary
+				);
+	
+				counter++;
+			}
+		}
+	
 		return counter;
-    }
+	}
 	
 	/**
 	 * 
@@ -109,20 +121,28 @@ public class FileManager {
 	public Set<Message> requestActiveNodesForFile(String filename) throws RemoteException {
 
 		this.filename = filename;
-		activeNodesforFile = new HashSet<Message>(); 
-
-		// Task: Given a filename, find all the peers that hold a copy of this file
-		
-		// generate the N replicas from the filename by calling createReplicaFiles()
-		
-		// iterate over the replicas of the file
-		
-		// for each replica, do findSuccessor(replica) that returns successor s.
-		
-		// get the metadata (Message) of the replica from the successor (i.e., active peer) of the file
-		
-		// save the metadata in the set activeNodesforFile.
-		
+		activeNodesforFile = new HashSet<>();
+	
+		// create replicas
+		createReplicaFiles();
+	
+		for (int i = 0; i < numReplicas; i++) {
+	
+			BigInteger replica = replicafiles[i];
+	
+			// find successor node
+			NodeInterface successor = chordnode.findSuccessor(replica);
+	
+			if (successor != null) {
+	
+				Message metadata = successor.getFilesMetadata().get(replica);
+	
+				if (metadata != null) {
+					activeNodesforFile.add(metadata);
+				}
+			}
+		}
+	
 		return activeNodesforFile;
 	}
 	
@@ -132,16 +152,17 @@ public class FileManager {
 	 */
 	public NodeInterface findPrimaryOfItem() {
 
-		// Task: Given all the active peers of a file (activeNodesforFile()), find which is holding the primary copy
-		
-		// iterate over the activeNodesforFile
-		
-		// for each active peer (saved as Message)
-		
-		// use the primaryServer boolean variable contained in the Message class to check if it is the primary or not
-		
-		// return the primary when found (i.e., use Util.getProcessStub to get the stub and return it)
-		
+		// Given all active peers of a file, find which holds the primary copy
+		if (activeNodesforFile == null || activeNodesforFile.isEmpty()) {
+			return null;
+		}
+	
+		for (Message msg : activeNodesforFile) {
+			if (msg.isPrimaryServer()) {
+				return Util.getProcessStub(msg.getNodeName(), msg.getPort());
+			}
+		}
+	
 		return null; 
 	}
 	
